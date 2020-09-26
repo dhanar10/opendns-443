@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+OPENDNS_IP="208.67.222.222"
+OPENDNS_PORT="443"
+
+if [ "$(id -u)" -ne "0" ]; then
+	sudo "$0"
+	exit "$?"
+fi
+
+if ! iptables -t nat -C OUTPUT -p udp --dport 53 -j DNAT --to "$OPENDNS_IP:$OPENDNS_PORT" &> "/dev/null"; then\
+	echo udp tcp | egrep -o '\w+' | xargs -I{} iptables -t nat -I OUTPUT -p {} --dport 53 -j DNAT --to "$OPENDNS_IP:$OPENDNS_PORT"
+	echo "OpenDNS $OPENDNS_PORT is now ENABLED!"
+else
+	echo udp tcp | egrep -o '\w+' | xargs -I{} iptables -t nat -D OUTPUT -p {} --dport 53 -j DNAT --to "$OPENDNS_IP:$OPENDNS_PORT"
+	echo "OpenDNS $OPENDNS_PORT is now DISABLED!"
+fi
+
